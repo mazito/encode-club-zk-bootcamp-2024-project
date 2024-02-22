@@ -1,2 +1,4 @@
-# encode-club-zk-bootcamp-2023-feb-homework
-Encode Club's ZK Feb 2023 Bootcamp - Homework
+# Encode Club's ZK Feb 2023 Bootcamp - Homework
+
+This contains my homework for the Zero Knowledge bootcamp.
+
