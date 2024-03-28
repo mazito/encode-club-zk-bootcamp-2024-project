@@ -102,7 +102,6 @@ export class Auction extends SmartContract {
     let biddersCount = this.biddersCount.getAndRequireEquals();
     let counter = biddersCount.add(1);
     this.biddersCount.set(counter);
-    Provable.log("biddersCount=", counter);
 
     // dispatch an action that we will use later to prove the Bid
     this.reducer.dispatch({
@@ -143,7 +142,7 @@ export class Auction extends SmartContract {
     senderUpdate.send({ to: receiver, amount });
   }
 
-  
+
   /**
    * Reduce the actions of type IS_FEE to check if the user with the
    * given nullifier has really payed the AUCTION_FEE. 

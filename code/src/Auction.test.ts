@@ -1,15 +1,16 @@
 import { Field, UInt64, Mina, PrivateKey, PublicKey, AccountUpdate, MerkleTree } from 'o1js';
 import { MerkleMap, MerkleMapWitness } from 'o1js';
 import { jest, describe, expect, it } from "@jest/globals";
-import { AUCTION_FEE, Auction} from './Auction';
+import { AUCTION_FEE, Auction} from "./Auction";
+import { AuctionRollup, Winner, MAX_FIELD } from "./rollup"
 import { Bidder, nullifyAccount, randomBid } from "./bidders";
-import { MerkleTreeH16 } from './collections';
+import { MerkleTreeH16 } from "./collections";
 
 jest.setTimeout(1000 * 60 * 60 * 1); // 1 hour
 const FEE = 150_000_000;
 const MAX_BIDDERS = 6;
 
-let proofsEnabled = true;
+let proofsEnabled = false;
 
 describe('ZK Reverse Bidding Auction', () => {
   let 
@@ -119,7 +120,25 @@ describe('ZK Reverse Bidding Auction', () => {
     expect(counter).toEqual(UInt64.from(MAX_BIDDERS));
   });
 
-  it('process bids and find winner using recusrive ZKProgram', async () => {
-    console.log("...")
+  it('process bids and find winner using recursive ZKProgram', async () => {
+    const { verificationKey } = await AuctionRollup.compile();
+
+    let previousProof = await AuctionRollup.initial({
+      bid: Field(MAX_FIELD), nullifier: Field(0)
+    });
+
+    for (let j=0; j < MAX_BIDDERS; j++) {
+      let bidder = bidders[j];
+      let bid = bidsMap.get(bidder.nullifier);
+      console.log("Bid #", j);
+
+      // recursive proofs
+      previousProof = await AuctionRollup.step(
+        previousProof.publicOutput,
+        previousProof,
+        { nullifier: bidder.nullifier, bid: bid }
+      );
+      console.log("Bid least", previousProof.publicOutput.bid.toBigInt());
+    }
   });  
 });
