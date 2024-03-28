@@ -90,7 +90,7 @@ describe('ZK Reverse Bidding Auction', () => {
     }
   });
 
-  it('makes a set of randon bids, one per bidder', async () => {
+  it('makes a set of random bids, one per bidder', async () => {
     for (let j=0; j < MAX_BIDDERS; j++) {
       let bidder = bidders[j];
 
