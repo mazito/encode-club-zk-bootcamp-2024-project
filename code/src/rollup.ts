@@ -3,17 +3,42 @@ import { Provable } from "o1js";
 
 export { Winner, AuctionRollup, MAX_FIELD }
 
+// const MAX_FIELD = '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
+const MAX_FIELD = '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
+
 class Winner extends Struct({
   nullifier: Field,
   bid: Field
-}) {}
+}) {
 
-const MAX_FIELD = '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
+  static zero(): Winner {
+    return {
+      nullifier: Field(0),
+      bid: Field(MAX_FIELD) 
+    }
+  } 
+
+  static selected(current: Winner, challenger: Winner): Winner {
+    let isLessThanCurrent = challenger.bid.lessThan(current.bid);
+    let newBid = Provable.if(isLessThanCurrent, 
+      challenger.bid, 
+      current.bid
+    );
+    let newNullifier = Provable.if(isLessThanCurrent, 
+      challenger.nullifier, 
+      current.nullifier
+    );
+    return {
+      nullifier: newNullifier,
+      bid: newBid
+    }
+  }  
+}
+
 
 const AuctionRollup = ZkProgram({
   name: "auction-rollup",
   publicInput: Winner,
-  publicOutput: Winner,
 
   methods: {
     initial: {
@@ -22,10 +47,6 @@ const AuctionRollup = ZkProgram({
       method(publicInput: Winner) {
         publicInput.nullifier.assertEquals(Field(0));
         publicInput.bid.assertEquals(Field(MAX_FIELD));
-        return { 
-          nullifier: publicInput.nullifier,
-          bid: publicInput.bid
-        };
       },
     },
 
@@ -33,7 +54,7 @@ const AuctionRollup = ZkProgram({
       privateInputs: [SelfProof, Winner],
       method(
         publicInput: Winner, 
-        previousProof: SelfProof<Winner, Winner>,
+        previousProof: SelfProof<Winner, void>,
         challenger: Winner
       ) {
         previousProof.verify();
@@ -44,20 +65,9 @@ const AuctionRollup = ZkProgram({
         // assertIsValidBidder
         // assertIsValidBid  
 
-        let currentWinner = publicInput;
-        let isLessThanWinner = challenger.bid.lessThan(currentWinner.bid);
-        let newBid = Provable.if(isLessThanWinner, 
-          challenger.bid, 
-          currentWinner.bid
-        );
-        let newNullifier = Provable.if(isLessThanWinner, 
-          challenger.nullifier, 
-          currentWinner.nullifier
-        );
-        return {
-          nullifier: newNullifier,
-          bid: newBid
-        }
+        let calculatedWinner = Winner.selected(publicInput, challenger);
+        calculatedWinner.bid.assertEquals(publicInput.bid);
+        calculatedWinner.nullifier.assertEquals(publicInput.nullifier);
       },
     },
   },  

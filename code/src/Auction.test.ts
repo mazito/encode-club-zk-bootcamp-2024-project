@@ -5,6 +5,7 @@ import { AUCTION_FEE, Auction} from "./Auction";
 import { AuctionRollup, Winner, MAX_FIELD } from "./rollup"
 import { Bidder, nullifyAccount, randomBid } from "./bidders";
 import { MerkleTreeH16 } from "./collections";
+import { currentSlot } from 'o1js/dist/node/lib/mina';
 
 jest.setTimeout(1000 * 60 * 60 * 1); // 1 hour
 const FEE = 150_000_000;
@@ -123,9 +124,8 @@ describe('ZK Reverse Bidding Auction', () => {
   it('process bids and find winner using recursive ZKProgram', async () => {
     const { verificationKey } = await AuctionRollup.compile();
 
-    let previousProof = await AuctionRollup.initial({
-      bid: Field(MAX_FIELD), nullifier: Field(0)
-    });
+    let currentWinner = Winner.zero();
+    let proof = await AuctionRollup.initial(currentWinner);
 
     for (let j=0; j < 1; j++) {
       let bidder = bidders[j];
@@ -133,12 +133,15 @@ describe('ZK Reverse Bidding Auction', () => {
       console.log("Bid #", j);
 
       // recursive proofs
-      previousProof = await AuctionRollup.step(
-        previousProof.publicOutput,
-        previousProof,
-        { nullifier: bidder.nullifier, bid: bid }
+      let challenger =  { nullifier: bidder.nullifier, bid: bid };
+      let newWinner = Winner.selected(currentWinner, challenger);
+      proof = await AuctionRollup.step(
+        newWinner,
+        proof,
+        challenger
       );
-      console.log("Bid least", previousProof.publicOutput.bid.toBigInt());
+      currentWinner = newWinner;
+      console.log("Bid least", newWinner.bid.toBigInt());
     }
   });  
 });
