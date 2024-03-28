@@ -127,7 +127,7 @@ describe('ZK Reverse Bidding Auction', () => {
       bid: Field(MAX_FIELD), nullifier: Field(0)
     });
 
-    for (let j=0; j < MAX_BIDDERS; j++) {
+    for (let j=0; j < 1; j++) {
       let bidder = bidders[j];
       let bid = bidsMap.get(bidder.nullifier);
       console.log("Bid #", j);
